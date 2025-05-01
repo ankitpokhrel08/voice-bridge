@@ -1,62 +1,66 @@
-import { useState } from "react";
-import "./App.css";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+import { useState, useEffect } from "react";
+import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
+import CallTranscribePage from "./pages/CallTranscribePage";
+import RoomPage from "./pages/RoomPage";
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+
+  useEffect(() => {
+    const storedLoginStatus = localStorage.getItem("isLoggedIn");
+    if (storedLoginStatus === "true") {
+      setIsLoggedIn(true);
+    }
+  }, []);
 
   const handleLogin = () => {
     setIsLoggedIn(true);
+    localStorage.setItem("isLoggedIn", "true");
   };
 
-  const handleSignUp = () => {
-    setIsSignUp(true);
-  };
-
-  const handleBackToLogin = () => {
-    setIsSignUp(false);
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    localStorage.removeItem("isLoggedIn");
   };
 
   return (
-    <div className="app-container">
-      {!isLoggedIn ? (
-        <div className="auth-container">
-          {!isSignUp ? (
-            <div className="login-form">
-              <h2>Login</h2>
-              <input type="text" placeholder="Username" />
-              <input type="password" placeholder="Password" />
-              <button onClick={handleLogin}>Login</button>
-              <p>
-                Don't have an account?{" "}
-                <span className="link" onClick={handleSignUp}>
-                  Sign up
-                </span>
-              </p>
-            </div>
-          ) : (
-            <div className="signup-form">
-              <h2>Sign Up</h2>
-              <input type="text" placeholder="Username" />
-              <input type="email" placeholder="Email" />
-              <input type="password" placeholder="Password" />
-              <button onClick={handleLogin}>Sign Up</button>
-              <p>
-                Already have an account?{" "}
-                <span className="link" onClick={handleBackToLogin}>
-                  Login
-                </span>
-              </p>
-            </div>
-          )}
-        </div>
-      ) : (
-        <div className="video-call-container">
-          <h1>Welcome to the Video Call App</h1>
-          <p>Video call interface will be here.</p>
-        </div>
-      )}
-    </div>
+    <Router>
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isLoggedIn ? (
+              <Navigate to="/room" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route
+          path="/room"
+          element={isLoggedIn ? <RoomPage /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/call"
+          element={
+            isLoggedIn ? (
+              <CallTranscribePage onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+      </Routes>
+    </Router>
   );
 }
 
