@@ -1,66 +1,51 @@
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
-import { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
+import LobbyPage from "./pages/LobbyPage";
+import RoomPage from "./pages/RoomPage";
+import CallTranscribePage from "./pages/CallTranscribePage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
-import CallTranscribePage from "./pages/CallTranscribePage";
-import RoomPage from "./pages/RoomPage";
+import RoomLobbyPage from "./pages/RoomLobbyPage";
+
+function RequireAuth({ children }) {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  const location = useLocation();
+  if (!isLoggedIn) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  return children;
+}
 
 function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-
-  useEffect(() => {
-    const storedLoginStatus = localStorage.getItem("isLoggedIn");
-    if (storedLoginStatus === "true") {
-      setIsLoggedIn(true);
-    }
-  }, []);
-
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    localStorage.setItem("isLoggedIn", "true");
-  };
-
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem("isLoggedIn");
-  };
-
   return (
-    <Router>
-      <Routes>
-        <Route
-          path="/"
-          element={
-            isLoggedIn ? (
-              <Navigate to="/room" replace />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route
-          path="/room"
-          element={isLoggedIn ? <RoomPage /> : <Navigate to="/login" replace />}
-        />
-        <Route
-          path="/call"
-          element={
-            isLoggedIn ? (
-              <CallTranscribePage onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/signup" element={<SignupPage />} />
+      <Route
+        path="/room"
+        element={
+          <RequireAuth>
+            <RoomLobbyPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/room/:roomId"
+        element={
+          <RequireAuth>
+            <RoomPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/call/:roomId"
+        element={
+          <RequireAuth>
+            <CallTranscribePage />
+          </RequireAuth>
+        }
+      />
+      <Route path="/" element={<Navigate to="/room" replace />} />
+    </Routes>
   );
 }
 

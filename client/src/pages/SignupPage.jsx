@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 
-function SignupPage({ onBackToLogin }) {
+function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const navigate = useNavigate();
 
   const handleSignup = () => {
     localStorage.setItem("email", email);
     localStorage.setItem("password", password);
-    alert("Signup successful! You can now log in.");
-    onBackToLogin();
+    localStorage.setItem("isLoggedIn", "true");
+    // Generate a random room ID and redirect to room page
+    const roomId = Math.random().toString(36).substring(2, 10);
+    navigate(`/room/${roomId}`);
   };
 
   return (
