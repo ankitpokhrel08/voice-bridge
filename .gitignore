@@ -1,3 +1,5 @@
 caption_project_env
 ffmpeg
 __pycache__/
+.env 
+sample_sound
