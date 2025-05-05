@@ -3,10 +3,10 @@ import requests
 import io
 
 # Replace this with your actual ngrok URL
-API_URL = "https://f46c-34-173-65-36.ngrok-free.app/transcribe"
+API_URL = "https://cfdb-34-173-65-36.ngrok-free.app/transcribe"
 
 # Load your full audio file (can be M4A, MP3, WAV, etc.)
-audio = AudioSegment.from_file("sample audio/my_voice.m4a")
+audio = AudioSegment.from_file("../sample audio/my_voice.m4a")
 
 
 # Set chunk size (in milliseconds), e.g., 5 seconds
