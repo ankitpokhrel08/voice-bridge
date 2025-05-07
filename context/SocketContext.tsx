@@ -8,6 +8,7 @@ import { Users } from "lucide-react";
 
 interface iSocketContext {
     socket: Socket | null
+    onlineUsers: SocketUser[] | null
 }
 
 // interface Props {
@@ -82,7 +83,9 @@ export const SocketContextProvider = ({children} : {children : React.ReactNode})
 
 
 
-    return <SocketContext.Provider value={{}}>
+    return <SocketContext.Provider value={{
+        onlineUsers
+    }}>
             {children}
             </SocketContext.Provider>
 };
