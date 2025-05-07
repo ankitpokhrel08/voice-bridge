@@ -4,7 +4,7 @@ import io
 import pandas as pd 
 from time import time
 # Replace this with your actual ngrok URL
-API_URL = "https://427a-35-197-6-142.ngrok-free.app/transcribe"
+API_URL = "https://6c90-34-48-99-235.ngrok-free.app/transcribe"
 
 
 # Load your full audio file (can be M4A, MP3, WAV, etc.)
@@ -12,15 +12,17 @@ audio = AudioSegment.from_file("../sample_sound/my_voice.m4a")
 
 lan_list = pd.read_csv("../language.csv")
 
-lan = input("Enter the language: ")
+# lan = input("Enter the language: ")
+lan = "Nepali"
 
 language_code = lan_list[lan_list['Language'] == lan]['Code'].values[0]
 
 print(language_code)
-init_prompt = input("Enter the prompt: ")
+# init_prompt = input("Enter the prompt: ")
+init_prompt = "College project"
 
 # Set chunk size (in milliseconds), e.g., 5 seconds
-chunk_duration = 5000
+chunk_duration = 2000 if language_code == "en" else 5000  # 5 seconds for English, 10 seconds for others
 
 # Create audio chunks
 chunks = [audio[i:i + chunk_duration] for i in range(0, len(audio), chunk_duration)]
