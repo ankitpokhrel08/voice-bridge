@@ -1,14 +1,16 @@
-import { getSocket } from "@/lib/getSocket";
-import { useUser } from "@clerk/nextjs";
-import { useCallback, useContext, useEffect, useState } from "react";
-import { createContext } from "react";
-import { Socket, io } from "socket.io-client";
-import { SocketUser } from "@/types";
-import { Users } from "lucide-react";
+import { getSocket } from '@/lib/getSocket';
+import { useUser } from '@clerk/nextjs';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { createContext } from 'react';
+import { Socket, io } from 'socket.io-client';
+import { OngoingCall, Participants, SocketUser } from '@/types';
+import { Users } from 'lucide-react';
 
 interface iSocketContext {
-    socket: Socket | null
-    onlineUsers: SocketUser[] | null
+//   socket: Socket | null;
+  onlineUsers: SocketUser[] | null;
+  ongoingCall: OngoingCall | null;
+  handleCall: (user: SocketUser) => void;
 }
 
 // interface Props {
@@ -17,84 +19,124 @@ interface iSocketContext {
 
 export const SocketContext = createContext<iSocketContext | null>(null);
 
-export const SocketContextProvider = ({children} : {children : React.ReactNode}) => {
-    const [socket, setSocket] = useState<Socket | null>(null);
-    const [isSocketConnected, setIsSocketConnected] = useState(false);
-    const [onlineUsers, setOnlineUsers] = useState<SocketUser[] | null>(null);
-    const { user } = useUser();
+export const SocketContextProvider = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => {
+  const { user } = useUser();
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+  const [onlineUsers, setOnlineUsers] = useState<SocketUser[] | null>(null);
+  const [ongoingCall, setOngoingCall] = useState<OngoingCall | null>(null);
+  const currentSocketUser = onlineUsers?.find(
+    (onlineUser) => onlineUser.userId === user?.id
+  );
 
-    console.log("onlineUsers>>", onlineUsers)
+  const handleCall = useCallback(
+    (user: SocketUser) => {
+      if (!currentSocketUser || !socket) return;
 
-    // initialize socket
-    useEffect(() => {
+      const participants = { caller: currentSocketUser, receiver: user };
+      setOngoingCall({
+        participants,
+        isRinging: false,
+      });
 
-        const newSocket = io();
-        setSocket(newSocket);
+      socket.emit('call', participants);
+    },
+    [socket, currentSocketUser, ongoingCall]
+  );
 
-        return () => {
-            newSocket.disconnect();
-        }
-    }, [user]);
+  const onIncomingCall = useCallback(
+    (participants: Participants) => {
+      setOngoingCall({
+        participants,
+        isRinging: true,
+      });
+    },
+    [socket, user, ongoingCall]
+  );
 
+  // initialize socket
+  useEffect(() => {
+    const newSocket = io();
+    setSocket(newSocket);
 
-    useEffect(() => {
-        if (socket === null) return;
+    return () => {
+      newSocket.disconnect();
+    };
+  }, [user]);
 
-        if(socket.connected) {
-            onConnect();
-        }
-        function onConnect() {
-            setIsSocketConnected(true);
-        }
+  useEffect(() => {
+    if (socket === null) return;
 
-        function onDisconnect() {
-            setIsSocketConnected(false);
-        }
+    if (socket.connected) {
+      onConnect();
+    }
+    function onConnect() {
+      setIsSocketConnected(true);
+    }
 
-        socket.on("connect", onConnect);
-        socket.on("disconnect", onDisconnect);
+    function onDisconnect() {
+      setIsSocketConnected(false);
+    }
 
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
 
-        return () => {
-            socket.off("connect", onConnect);
-            socket.off("disconnect", onDisconnect);
-        }
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, [socket]);
 
-    }, [socket]);
+  //set online Users
 
+  useEffect(() => {
+    if (!socket || !isSocketConnected) return;
 
-    //set online Users
+    socket.emit('addNewUser', user);
+    socket.on('getUsers', (res) => {
+      setOnlineUsers(res);
+    });
 
-    useEffect(()=> {
+    return () => {
+      socket.off('getUsers', (res) => {
+        setOnlineUsers(res);
+      });
+    };
+  }, [socket, isSocketConnected, user]);
 
-        if(!socket || !isSocketConnected) return;
+  // calls
+  useEffect(() => {
+    if (!socket || !isSocketConnected) return;
 
-        socket.emit("addNewUser", user);
-        socket.on("getUsers", (res) => {
-            setOnlineUsers(res);
-        })
+    socket.on('incomingCall', onIncomingCall);
 
-        return () => {
-            socket.off("getUsers", (res) => {
-            setOnlineUsers(res);
-        })
-        }
-    }, [socket, isSocketConnected, user]);
+    return () => {
+      socket.off('incomingCall', onIncomingCall);
+    };
+  }, [socket, isSocketConnected, user, onIncomingCall]);
 
-
-
-    return <SocketContext.Provider value={{
-        onlineUsers
-    }}>
-            {children}
-            </SocketContext.Provider>
+  return (
+    <SocketContext.Provider
+      value={{
+        onlineUsers,
+        handleCall,
+        ongoingCall
+      }}
+    >
+      {children}
+    </SocketContext.Provider>
+  );
 };
 
 export const useSocket = () => {
-    const context = useContext(SocketContext);
+  const context = useContext(SocketContext);
 
-    if (!context) {
-        throw new Error("useSocket must be used within a SocketContextProvider");
-    }
-    return context;
-}
+  if (!context) {
+    throw new Error('useSocket must be used within a SocketContextProvider');
+  }
+  return context;
+};

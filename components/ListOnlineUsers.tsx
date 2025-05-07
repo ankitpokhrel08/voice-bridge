@@ -6,18 +6,19 @@ import Avatar from './Avatar';
 
 const ListOnlineUsers = () => {
   const { user } = useUser();
-  const { onlineUsers } = useSocket();
+  const { onlineUsers, handleCall } = useSocket();
   return (
     <div className="flex border-b border-b-primary/10 w-full items-center pb-2">
       {onlineUsers &&
         onlineUsers.map((onlineUser) => {
-          if (onlineUser.userId === user?.id) {
-            return null;
+          if (onlineUser.userId === user?.id) { 
+            return null; 
           }
 
           return (
             <div
               key={onlineUser.userId}
+              onClick={() => handleCall(onlineUser)}
               className="flex flex-col items-center gap-1 cursor-pointer"
             >
               <Avatar src={onlineUser.profile.imageUrl} />
