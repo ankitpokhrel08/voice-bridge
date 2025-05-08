@@ -6,7 +6,7 @@ import threading
 import time
 import pandas as pd
 
-API_URL = "https://ea41-34-125-72-78.ngrok-free.app/transcribe"
+API_URL = "https://ab92-34-87-66-206.ngrok-free.app/transcribe"
 
 # Load language CSV and set language
 lan_list = pd.read_csv("../language.csv")

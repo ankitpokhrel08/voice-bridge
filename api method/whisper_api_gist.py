@@ -3,10 +3,35 @@ import requests
 import io
 import pandas as pd 
 from time import time
-# Replace this with your actual ngrok URL
-# API_URL = "https://excited-thrush-enabled.ngrok-free.app/transcribe"
+from dotenv import load_dotenv
+import os
+import re
 
-API_URL = "https://ff6e-34-41-202-22.ngrok-free.app/transcribe"
+load_dotenv()
+
+GIST_ID = os.getenv("GIST_ID")
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+
+
+def get_ngrok_from_gist(gist_id, token):
+    try:
+        response = requests.get(
+            f"https://api.github.com/gists/{gist_id}",
+            headers={"Authorization": f"token {token}"}
+        )
+        response.raise_for_status()
+        gist_data = response.json()
+        content = gist_data["files"]["ngrok-url.txt"]["content"]
+        return content.strip()
+    except Exception as e:
+        print("❌ Failed to get Ngrok URL from Gist:", e)
+        return None
+
+ngrok_url = get_ngrok_from_gist(GIST_ID, GITHUB_TOKEN)
+if not ngrok_url:
+    raise Exception("Ngrok URL not found. Aborting...")
+
+API_URL = re.search(r'"(https://[a-zA-Z0-9\-]+\.ngrok-free\.app)"', ngrok_url).group(1) + "/transcribe"
 
 
 
@@ -24,10 +49,10 @@ init_prompt = "College project"
 
 
 # Load your full audio file (can be M4A, MP3, WAV, etc.)
-audio = AudioSegment.from_file("../sample_sound/empty.m4a")
+audio = AudioSegment.from_file("../sample_sound/my_voice.m4a")
 
 # Set chunk size (in milliseconds), e.g., 5 seconds
-chunk_duration = 2000 if language_code == "en" else 5000  # 5 seconds for English, 10 seconds for others
+chunk_duration = 3000 if language_code == "en" else 5000  # 5 seconds for English, 10 seconds for others
 
 # Create audio chunks
 chunks = [audio[i:i + chunk_duration] for i in range(0, len(audio), chunk_duration)]
