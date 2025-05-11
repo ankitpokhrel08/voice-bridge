@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# AI Live Call Transcribe
 
-## Getting Started
+A real-time WebRTC-based communication platform with AI-powered transcription capabilities for live calls.
 
-First, run the development server:
+## Overview
+
+This application enables peer-to-peer audio/video communication with real-time transcription services, making calls more accessible and providing searchable conversation records.
+
+## Features
+
+- Real-time audio and video communication
+- Live speech-to-text transcription
+- Low-latency WebRTC connections
+- Support for NAT traversal using ICE
+- Cross-platform compatibility
+
+## Prerequisites
+
+- Modern web browser with WebRTC support (Chrome, Firefox, Edge, Safari)
+- Microphone and camera access
+- Internet connection
+
+## Installation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone the repository
+git clone https://github.com/yourusername/ai-live-call-transcribe.git
+
+# Navigate to the project directory
+cd ai-live-call-transcribe
+
+# Install dependencies
+npm install
+
+# Start the application
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Usage
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Allow microphone and camera access when prompted
+2. Share your unique session ID with the person you want to call
+3. When connected, your call will automatically be transcribed
+4. Access transcripts during or after the call
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Technical Details
 
-## Learn More
+### WebRTC Implementation
 
-To learn more about Next.js, take a look at the following resources:
+#### Media Stream Negotiation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+WebRTC involves negotiating media streams between peers. The addTrack() method is used to add audio and video tracks from the local stream to the peer connection. These tracks are then negotiated between peers during the offer/answer exchange to establish a common media format for communication.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+#### Establishing Bi-Directional Communication
 
-## Deploy on Vercel
+By adding local tracks to the peer connection, you enable bi-directional communication between peers. Your local audio and video tracks are sent to the remote peer, allowing them to see and hear you. Similarly, the remote peer's audio and video tracks are received and played back locally.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+#### Codec Negotiation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+Adding tracks to the peer connection triggers codec negotiation between peers. WebRTC negotiates codecs based on the capabilities of each peer's device and network conditions to ensure optimal audio and video quality during communication.
+
+#### ICE Candidate Exchange
+
+The addition of tracks to the peer connection triggers the gathering and exchange of ICE (Interactive Connectivity Establishment) candidates. ICE candidates facilitate NAT traversal and enable peers to establish direct peer-to-peer connections, even when behind firewalls or NAT devices.
+
+#### Signaling
+
+Once local tracks are added to the peer connection, the peer connection's local description is updated. This local description includes information about the local media streams and ICE candidates, which is then sent to the remote peer through a signaling channel for negotiation.
+
+## Transcription Technology
+
+The application uses [specify AI transcription service] to convert speech to text in real-time. The transcription service processes audio streams and returns text with minimal latency.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+## Contact
+
+If you have any questions or feedback, please contact [your email or contact information].

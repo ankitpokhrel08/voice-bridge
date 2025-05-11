@@ -1,55 +1,68 @@
-import { createServer } from "node:http";
-import next from "next";
+import express from "express";
+import { createServer } from "http";
 import { Server } from "socket.io";
-import onCall from "./socket-events/onCall.js";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
-const dev = process.env.NODE_ENV !== "production";
-const hostname = "localhost";
-const port = 3000;
-// when using middleware `hostname` and `port` must be provided below
-const app = next({ dev, hostname, port });
-const handler = app.getRequestHandler();
- 
-export let io;
+const app = express();
+const server = createServer(app);
+const io = new Server(server);
+const allusers = {};
 
-app.prepare().then(() => {
-  const httpServer = createServer(handler);
+// file://path/to/your/system/path, fileURLToPath converts url to path, then dirname gives us the directory name
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-  io = new Server(httpServer);
-  let onlineUsers = [];
+// exposing public directory to outside world
+app.use(express.static("public"));
 
-  io.on("connection", (socket) => {
-    //add user
-    socket.on('addNewUser', (clerkUser) => {
+// handle incoming http request
+app.get("/", (req, res) => {
+  console.log("GET Request /");
+  res.sendFile(join(__dirname + "/app/index.html"));
+});
 
-    clerkUser && !onlineUsers.some((user) => user?.userid === clerkUser.id) &&
-    onlineUsers.push({
-        userid: clerkUser.id,
-        socketId: socket.id,
-        profile: clerkUser,
-    });
-
-    io.emit("getUsers", onlineUsers);
-    })
-
-    //remove user
-    socket.on('disconnect', () => {
-        onlineUsers = onlineUsers.filter(user => user.socketId != socket.id);
-        
-        //send active users
-        io.emit("getUsers", onlineUsers);
-
-        // call events
-        socket.on('call', onCall)
-        });
+// handle socket connections
+io.on("connection", (socket) => {
+  console.log(
+    `Someone connected to socket server whose socket id is ${socket.id}`
+  );
+  socket.on("join-user", (username) => {
+    console.log(`${username} joined socket connection`);
+    allusers[username] = { username, id: socket.id };
+    // inform everyone that someone has joined
+    io.emit("joined", allusers);
   });
 
-  httpServer
-    .once("error", (err) => {
-      console.error(err);
-      process.exit(1);
-    })
-    .listen(port, () => {
-      console.log(`> Ready on http://${hostname}:${port}`);
-    });
+  socket.on("offer", ({ from, to, offer }) => {
+    console.log({ from, to, offer });
+    io.to(allusers[to].id).emit("offer", { from, to, offer });
+  });
+
+  socket.on("answer", ({ from, to, answer }) => {
+    io.to(allusers[from].id).emit("answer", { from, to, answer });
+  });
+
+  socket.on("call-rejected", ({ from, to }) => {
+    io.to(allusers[from].id).emit("call-rejected", { from: to, to: from });
+  });
+
+  socket.on("end-call", ({ from, to }) => {
+    io.to(allusers[to].id).emit("end-call", { from, to });
+  });
+
+  socket.on("call-ended", (caller) => {
+    const [from, to] = caller;
+    io.to(allusers[from].id).emit("call-ended", caller);
+    io.to(allusers[to].id).emit("call-ended", caller);
+  });
+
+  socket.on("icecandidate", (candidate) => {
+    console.log({ candidate });
+    //broadcast candidate to other peers
+    socket.broadcast.emit("icecandidate", candidate);
+  });
+});
+
+server.listen(9000 /* port */, "0.0.0.0", () => {
+  console.log("Server listening on all interfaces at port 9000");
 });
