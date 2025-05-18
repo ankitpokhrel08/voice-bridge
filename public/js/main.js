@@ -1,5 +1,4 @@
 // Get DOM elements
-
 const createUserBtn = document.getElementById("create-user");
 const username = document.getElementById("username");
 const allusersHtml = document.getElementById("allusers");
@@ -16,6 +15,7 @@ const connectionStatus = document.getElementById("connection-status");
 const currentCallUser = document.getElementById("current-call-user");
 const remoteUserBadge = document.getElementById("remote-user-badge");
 const transcriptionContent = document.getElementById("transcription-content");
+const transcriptionStatus = document.getElementById("transcription-status");
 
 // Initialize socket connection
 const socket = io();
@@ -35,7 +35,7 @@ let screenStream = null;
 let ringtone = null;
 let currentIncomingCall = null;
 const TRANSCRIPTION_API =
-  "https://4223-34-124-175-170.ngrok-free.app/transcribe";
+  "https://b7cb-34-148-73-231.ngrok-free.app/transcribe";
 
 // Hide main container initially
 mainContainer.classList.add("d-none");
@@ -219,7 +219,14 @@ async function acceptIncomingCall() {
   remoteUserBadge.textContent = from;
   connectionStatus.textContent = "Connected";
 
-  if (localStream) {
+  // Use dual transcription if both streams are available
+  if (localStream && remoteVideo.srcObject) {
+    const recorders = setupDualTranscription(
+      localStream,
+      remoteVideo.srcObject
+    );
+    window._dualTranscriptionRecorders = recorders; // for cleanup
+  } else if (localStream) {
     localRecorder = setupTranscription(localStream, true);
   }
 
@@ -307,25 +314,70 @@ function setupTranscription(stream, isLocal) {
   };
 
   mediaRecorder.onstop = async () => {
+    updateTranscriptionStatus("active");
+
     const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
     audioChunks = [];
 
+    if (audioBlob.size < 1000) {
+      console.warn("Audio blob too small, skipping transcription");
+      if (document.getElementById("end-call-btn").style.display !== "none") {
+        mediaRecorder.start(5000);
+      }
+      return;
+    }
+
     const formData = new FormData();
-    formData.append("audio", audioBlob);
+    formData.append("audio", audioBlob, "audio.webm"); // correct key name 'audio'
     formData.append("user", isLocal ? username.value : "Remote User");
 
+    console.log(
+      `Sending ${isLocal ? "local" : "remote"} audio to API, size:`,
+      audioBlob.size,
+      "bytes"
+    );
+
+    // Store audio in localStorage for debugging (as base64)
+    const reader = new FileReader();
+    reader.onloadend = function () {
+      try {
+        localStorage.setItem(`audio_${Date.now()}`, reader.result);
+      } catch (e) {
+        console.warn("LocalStorage quota exceeded or error storing audio", e);
+      }
+    };
+    reader.readAsDataURL(audioBlob);
+
     try {
+      console.log("Starting API request to:", TRANSCRIPTION_API);
+
       const response = await fetch(TRANSCRIPTION_API, {
         method: "POST",
         body: formData,
       });
 
+      console.log("API Response status:", response.status);
+
       if (response.ok) {
         const data = await response.json();
-        displayTranscription(data.text, isLocal);
+        console.log("Full API response:", data);
+        const transcriptionText = data.translation || data.text;
+
+        if (transcriptionText && transcriptionText.trim() !== "") {
+          displayTranscription(transcriptionText, isLocal);
+          console.log("Transcription from API:", transcriptionText);
+        } else {
+          console.warn("Empty transcription received");
+        }
+      } else {
+        updateTranscriptionStatus("error");
+        const errorText = await response.text();
+        console.error("API Error response:", response.status, errorText);
+        // Don't show error messages to user unless they persist
       }
     } catch (error) {
-      console.error("Transcription error:", error);
+      updateTranscriptionStatus("error");
+      console.error("Transcription fetch error:", error);
     }
 
     if (document.getElementById("end-call-btn").style.display !== "none") {
@@ -337,9 +389,122 @@ function setupTranscription(stream, isLocal) {
   return mediaRecorder;
 }
 
+// Function to setup dual audio recording and transcription (merge local+remote)
+function setupDualTranscription(localStream, remoteStream) {
+  // Create separate MediaRecorders for local and remote
+  const localAudioStream = new MediaStream();
+  localStream
+    .getAudioTracks()
+    .forEach((track) => localAudioStream.addTrack(track));
+  const remoteAudioStream = new MediaStream();
+  remoteStream
+    .getAudioTracks()
+    .forEach((track) => remoteAudioStream.addTrack(track));
+
+  const localRecorder = new MediaRecorder(localAudioStream, {
+    mimeType: "audio/webm",
+  });
+  const remoteRecorder = new MediaRecorder(remoteAudioStream, {
+    mimeType: "audio/webm",
+  });
+
+  let localChunks = [];
+  let remoteChunks = [];
+
+  localRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) localChunks.push(event.data);
+  };
+  remoteRecorder.ondataavailable = (event) => {
+    if (event.data.size > 0) remoteChunks.push(event.data);
+  };
+
+  // Helper to merge and send
+  async function sendMergedAudio() {
+    if (localChunks.length === 0 && remoteChunks.length === 0) return;
+
+    updateTranscriptionStatus("active");
+
+    try {
+      // Merge sequentially: local first, then remote
+      const mergedBlob = new Blob([...localChunks, ...remoteChunks], {
+        type: "audio/webm",
+      });
+      localChunks = [];
+      remoteChunks = [];
+
+      console.log("Merged audio blob size:", mergedBlob.size, "bytes");
+      if (mergedBlob.size < 1000) {
+        console.warn("Merged audio blob too small, skipping transcription");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("audio", mergedBlob, "merged.webm"); // must be 'audio' for API
+      formData.append("user", username.value);
+
+      // Store merged audio in localStorage for debugging (as base64)
+      const reader = new FileReader();
+      reader.onloadend = function () {
+        try {
+          localStorage.setItem(`mergedAudio_${Date.now()}`, reader.result);
+        } catch (e) {
+          console.warn("LocalStorage quota exceeded or error storing audio", e);
+        }
+      };
+      reader.readAsDataURL(mergedBlob);
+
+      console.log("Sending merged audio to API");
+      const response = await fetch(TRANSCRIPTION_API, {
+        method: "POST",
+        body: formData,
+      });
+
+      console.log("API Response status:", response.status);
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Full API response:", data);
+        const transcriptionText = data.translation || data.text;
+
+        if (transcriptionText && transcriptionText.trim() !== "") {
+          displayTranscription(transcriptionText, true);
+          console.log("Transcription from API:", transcriptionText);
+        } else {
+          console.warn("Empty transcription received");
+        }
+      } else {
+        updateTranscriptionStatus("error");
+        console.error("API Error response:", response.status);
+        try {
+          const errorText = await response.text();
+          console.error("Error details:", errorText);
+        } catch (e) {
+          console.error("Could not read error response");
+        }
+      }
+    } catch (error) {
+      updateTranscriptionStatus("error");
+      console.error("Transcription error:", error);
+    }
+  }
+
+  localRecorder.onstop = sendMergedAudio;
+  remoteRecorder.onstop = sendMergedAudio;
+
+  // Start both recorders
+  localRecorder.start(5000);
+  remoteRecorder.start(5000);
+
+  return { localRecorder, remoteRecorder };
+}
+
 // Function to display transcription in the content area
 function displayTranscription(text, isLocal) {
   if (!text || text.trim() === "") return;
+
+  console.log(
+    `Displaying ${isLocal ? "local" : "remote"} transcription: ${text}`
+  );
 
   const transcriptDiv = document.createElement("div");
   transcriptDiv.classList.add(
@@ -359,6 +524,25 @@ function displayTranscription(text, isLocal) {
 
   transcriptionContent.appendChild(transcriptDiv);
   transcriptionContent.scrollTop = transcriptionContent.scrollHeight;
+}
+
+// Function to update transcription status
+function updateTranscriptionStatus(status) {
+  if (!transcriptionStatus) return;
+
+  transcriptionStatus.className = "status-dot";
+
+  switch (status) {
+    case "active":
+      transcriptionStatus.classList.add("active");
+      break;
+    case "error":
+      transcriptionStatus.classList.add("error");
+      break;
+    default:
+      // Inactive status
+      break;
+  }
 }
 
 // Function to update call duration timer
@@ -400,6 +584,19 @@ const startCall = async (user) => {
     to: user,
     offer: pc.localDescription,
   });
+
+  // Use dual transcription if both streams are available
+  setTimeout(() => {
+    if (localStream && remoteVideo.srcObject) {
+      const recorders = setupDualTranscription(
+        localStream,
+        remoteVideo.srcObject
+      );
+      window._dualTranscriptionRecorders = recorders;
+    } else if (localStream) {
+      localRecorder = setupTranscription(localStream, true);
+    }
+  }, 2000); // Wait for remote stream to be set
 };
 
 // Function to end a call
@@ -468,7 +665,14 @@ const endCall = () => {
     remoteVideo.srcObject = null;
   }
 
-  // Stop transcription
+  // Stop dual transcription if running
+  if (window._dualTranscriptionRecorders) {
+    window._dualTranscriptionRecorders.localRecorder.stop();
+    window._dualTranscriptionRecorders.remoteRecorder.stop();
+    window._dualTranscriptionRecorders = null;
+  }
+
+  // Stop single transcription if running
   if (localRecorder) {
     localRecorder.stop();
     localRecorder = null;
@@ -936,6 +1140,31 @@ style.textContent = `
     0% { transform: scale(1); }
     50% { transform: scale(1.05); }
     100% { transform: scale(1); }
+  }
+
+  .transcription-status {
+    display: flex;
+    align-items: center;
+    margin-right: 10px;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #666;
+    margin-right: 5px;
+    transition: background-color 0.3s ease;
+  }
+
+  .status-dot.active {
+    background-color: #2c9d8f; /* Success color */
+    box-shadow: 0 0 5px #2c9d8f;
+    animation: pulse 1.5s infinite;
+  }
+
+  .status-dot.error {
+    background-color: #b83069; /* Error color */
   }
 `;
 document.head.appendChild(style);
