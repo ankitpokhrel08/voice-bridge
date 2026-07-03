@@ -7,13 +7,14 @@ interface RosterListProps {
   ownUsername: string;
   onCall: (username: string) => void;
   disabled: boolean;
+  inCall: boolean;
 }
 
-export function RosterList({ roster, ownUsername, onCall, disabled }: RosterListProps) {
+export function RosterList({ roster, ownUsername, onCall, disabled, inCall }: RosterListProps) {
   const entries = Object.values(roster);
 
   return (
-    <aside className={styles.sidebar}>
+    <aside className={inCall ? `${styles.sidebar} ${styles.collapsed}` : styles.sidebar}>
       <div className={styles.brand}>
         <span className={styles.brandDot} aria-hidden="true" />
         <span className={styles.wordmark}>Voice Bridge</span>

@@ -49,3 +49,15 @@
   font-family: var(--font-mono);
   color: var(--paper);
 }
+
+/* Smaller docked tiles on phones so both fit beside each other above the
+   controls (was 160 + 220 + gap ~= 400px, wider than a 375px screen). */
+@media (max-width: 768px) {
+  .tile {
+    width: 104px;
+  }
+
+  .remote {
+    width: 128px;
+  }
+}

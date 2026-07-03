@@ -66,3 +66,9 @@
 .githubLink:hover {
   color: var(--paper);
 }
+
+@media (max-width: 768px) {
+  .bar {
+    padding: var(--space-3) var(--space-4);
+  }
+}

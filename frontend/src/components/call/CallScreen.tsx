@@ -22,7 +22,13 @@ export function CallScreen({ ownUsername }: CallScreenProps) {
 
   return (
     <div className={styles.layout}>
-      <RosterList roster={call.roster} ownUsername={ownUsername} onCall={call.startCall} disabled={isBusy} />
+      <RosterList
+        roster={call.roster}
+        ownUsername={ownUsername}
+        onCall={call.startCall}
+        disabled={isBusy}
+        inCall={call.callState.status !== "idle"}
+      />
 
       <main className={styles.main}>
         <CallStatusBar

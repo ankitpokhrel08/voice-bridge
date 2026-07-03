@@ -1,9 +1,16 @@
 .stage {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   padding: var(--space-6) var(--space-6) 0;
   position: relative;
+}
+
+@media (max-width: 480px) {
+  .stage {
+    padding: var(--space-5) var(--space-4) 0;
+  }
 }
 
 .header {

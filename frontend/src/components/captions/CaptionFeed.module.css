@@ -51,3 +51,18 @@
   font-size: var(--text-sm);
   text-align: center;
 }
+
+@media (max-width: 768px) {
+  .feed {
+    padding: var(--space-4);
+  }
+
+  .signalStrip {
+    margin-bottom: var(--space-4);
+  }
+
+  /* Leave room so the docked video tiles don't sit on top of the last caption. */
+  .scroll {
+    padding-bottom: 132px;
+  }
+}

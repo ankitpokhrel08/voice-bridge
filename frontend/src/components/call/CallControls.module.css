@@ -51,3 +51,15 @@
 .end:hover:not(:disabled) {
   background: #c94f3f;
 }
+
+@media (max-width: 768px) {
+  .controls {
+    gap: var(--space-3);
+    padding: var(--space-3) 0 var(--space-4);
+  }
+
+  .button {
+    width: 48px;
+    height: 48px;
+  }
+}

@@ -129,3 +129,34 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+
+/* Mobile: the sidebar becomes a compact top panel; contacts scroll if long,
+   and it steps aside entirely once a call is up so the call fills the screen. */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    flex-shrink: 1;
+    max-height: 42vh;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: var(--space-4);
+  }
+
+  .brand {
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-3);
+  }
+
+  .header {
+    margin-bottom: var(--space-3);
+  }
+
+  .collapsed {
+    display: none;
+  }
+
+  .callButton {
+    width: 40px;
+    height: 40px;
+  }
+}

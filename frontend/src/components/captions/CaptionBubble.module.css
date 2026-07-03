@@ -46,4 +46,12 @@
   font-size: var(--text-md);
   line-height: 1.5;
   color: var(--paper);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+@media (max-width: 768px) {
+  .text {
+    font-size: var(--text-base);
+  }
 }
