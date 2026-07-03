@@ -50,7 +50,7 @@ export function CallStatusBar({
       </div>
       <a
         className={styles.githubLink}
-        href="https://github.com/ankitpokhrel08/live-call-transcribe"
+        href="https://github.com/ankitpokhrel08/voice-bridge"
         target="_blank"
         rel="noreferrer"
         aria-label="View source on GitHub"
