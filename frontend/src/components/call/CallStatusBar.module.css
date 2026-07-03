@@ -1,0 +1,68 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--line);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-mono);
+}
+
+.liveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--text-faint);
+}
+
+.liveDot[data-status="active"] {
+  background: var(--signal-amber);
+  animation: pulse 1.6s var(--ease-standard) infinite;
+}
+
+.liveDot[data-status="error"] {
+  background: var(--danger);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.duration {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.peer {
+  font-size: var(--text-sm);
+  color: var(--paper);
+}
+
+.peer[data-idle="true"] {
+  color: var(--text-faint);
+}
+
+.peerEnded {
+  font-size: var(--text-sm);
+  color: var(--danger);
+}
+
+.githubLink {
+  color: var(--text-muted);
+  transition: color var(--duration-fast) var(--ease-standard);
+}
+
+.githubLink:hover {
+  color: var(--paper);
+}

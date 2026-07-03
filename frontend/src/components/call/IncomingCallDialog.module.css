@@ -1,0 +1,92 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgb(18 24 29 / 85%);
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  z-index: 100;
+  animation: fadeIn var(--duration-slow) var(--ease-standard);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: var(--space-7) var(--space-6);
+  width: 320px;
+  text-align: center;
+  box-shadow: var(--shadow-modal);
+}
+
+.pulseIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--signal-amber-dim);
+  color: var(--signal-amber);
+  margin-bottom: var(--space-5);
+  animation: ringPulse 1.4s var(--ease-standard) infinite;
+}
+
+@keyframes ringPulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--signal-amber-strong);
+  }
+  50% {
+    box-shadow: 0 0 0 10px transparent;
+  }
+}
+
+.caller {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--paper);
+  margin-bottom: var(--space-6);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.reject,
+.accept {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.reject {
+  background: var(--danger-dim);
+  color: var(--danger);
+}
+
+.accept {
+  background: var(--signal-amber);
+  color: var(--ink);
+}
+
+.reject:hover,
+.accept:hover {
+  transform: translateY(-1px);
+}

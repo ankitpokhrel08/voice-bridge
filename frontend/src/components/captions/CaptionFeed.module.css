@@ -1,0 +1,53 @@
+.feed {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: var(--space-6);
+}
+
+.signalStrip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--space-6);
+}
+
+.track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  width: 100%;
+  transform-origin: left;
+  transition: transform 100ms linear;
+}
+
+.fill[data-channel="local"] {
+  background: var(--signal-amber);
+}
+
+.fill[data-channel="remote"] {
+  background: var(--relay-cyan);
+}
+
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.empty {
+  margin: auto;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-align: center;
+}

@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+faster-whisper
+webrtcvad-wheels
+httpx
+pydantic
+pydantic-settings
+numpy
+websockets
+argostranslate

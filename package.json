@@ -1,15 +1,16 @@
 {
-  "name": "video-calling-app",
+  "name": "live-call-transcribe",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Voice Bridge -- WebRTC video calls with live, translated captions (Socket.io signaling server)",
+  "main": "server.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server"
+    "start": "nodemon server",
+    "build": "npm --prefix frontend run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Ankit Pokhrel",
+  "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.7.4"

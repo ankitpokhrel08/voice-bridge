@@ -1,0 +1,29 @@
+# Render Blueprint for the signaling server + built frontend.
+# Deploy: Render dashboard -> New -> Blueprint -> pick this repo.
+# The transcription backend is deployed separately (Hugging Face Spaces,
+# see DEPLOY.md) -- set VITE_TRANSCRIBE_WS_URL below to that Space's wss:// URL
+# once it exists (Render will prompt for it since it's not known ahead of time).
+services:
+  - type: web
+    name: voice-bridge
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm install --prefix frontend && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      # The transcription backend's wss:// URL (the HF Space). Baked into the
+      # frontend bundle at build time, so it must be set before the build runs.
+      - key: VITE_TRANSCRIBE_WS_URL
+        sync: false
+      # Optional but strongly recommended for reliable cross-network calls:
+      # your own dedicated TURN credentials (free 50GB/mo at metered.ca).
+      # Leave unset to fall back to the shared, rate-limited public relay.
+      # VITE_TURN_URL may be comma-separated (see DEPLOY.md).
+      - key: VITE_TURN_URL
+        sync: false
+      - key: VITE_TURN_USERNAME
+        sync: false
+      - key: VITE_TURN_CREDENTIAL
+        sync: false

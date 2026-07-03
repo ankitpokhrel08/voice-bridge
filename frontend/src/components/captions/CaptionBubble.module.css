@@ -1,0 +1,49 @@
+.bubble {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--line);
+  animation: slideIn var(--duration-slow) var(--ease-standard);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.speaker {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--paper);
+}
+
+.langChip {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--relay-cyan);
+  background: var(--relay-cyan-dim);
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.03em;
+}
+
+.text {
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  color: var(--paper);
+}

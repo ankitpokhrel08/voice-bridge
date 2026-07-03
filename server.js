@@ -12,13 +12,13 @@ const allusers = {};
 // file://path/to/your/system/path, fileURLToPath converts url to path, then dirname gives us the directory name
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-// exposing public directory to outside world
-app.use(express.static("public"));
+// serves the built React frontend (run `npm run build` in frontend/ first)
+app.use(express.static("frontend/dist"));
 
 // handle incoming http request
 app.get("/", (req, res) => {
   console.log("GET Request /");
-  res.sendFile(join(__dirname + "/app/index.html"));
+  res.sendFile(join(__dirname, "frontend/dist/index.html"));
 });
 
 // handle socket connections
@@ -61,8 +61,22 @@ io.on("connection", (socket) => {
     //broadcast candidate to other peers
     socket.broadcast.emit("icecandidate", candidate);
   });
+
+  socket.on("disconnect", () => {
+    // drop this socket's user from the roster so only active users show
+    for (const [username, user] of Object.entries(allusers)) {
+      if (user.id === socket.id) {
+        delete allusers[username];
+        console.log(`${username} disconnected, removed from roster`);
+      }
+    }
+    io.emit("joined", allusers);
+  });
 });
 
-server.listen(9000 /* port */, "0.0.0.0", () => {
-  console.log("Server listening on all interfaces at port 9000");
+// Hosts like Render/Railway/Fly assign their own port via $PORT and expect
+// the app to listen on it -- 9000 remains the local-dev default.
+const PORT = process.env.PORT || 9000;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server listening on all interfaces at port ${PORT}`);
 });

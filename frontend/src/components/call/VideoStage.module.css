@@ -1,0 +1,11 @@
+.stage {
+  position: absolute;
+  right: var(--space-6);
+  /* Clears CallControls' rendered height (~108px) plus a gap, so the docked
+     tiles never sit on top of the control bar (and hide the end-call button). */
+  bottom: 124px;
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  z-index: 5;
+}
