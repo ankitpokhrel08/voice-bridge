@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import type { ChatMessage } from "../../types/transcription";
+import type { ChatDisplayMessage } from "../../types/transcription";
 import { ChatComposer } from "./ChatComposer";
 import styles from "./ChatPanel.module.css";
 
 interface ChatPanelProps {
-  messages: ChatMessage[];
+  messages: ChatDisplayMessage[];
   ownUserId: string;
   /** This user's preferred language -- drives the composer's typing helper. */
   languageCode: string;
@@ -38,7 +38,7 @@ export function ChatPanel({ messages, ownUserId, languageCode, canSend, onSend }
         ) : (
           messages.map((message) => (
             <ChatBubble
-              key={`${message.from}-${message.message_id}`}
+              key={message.client_id ?? `${message.from}-${message.message_id}`}
               message={message}
               own={message.from === ownUserId}
             />
@@ -50,13 +50,13 @@ export function ChatPanel({ messages, ownUserId, languageCode, canSend, onSend }
   );
 }
 
-function ChatBubble({ message, own }: { message: ChatMessage; own: boolean }) {
+function ChatBubble({ message, own }: { message: ChatDisplayMessage; own: boolean }) {
   const text = message.translated_text || message.original_text;
   const wasTranslated = !own && message.translated_text !== message.original_text;
 
   return (
     <div className={styles.row} data-own={own || undefined}>
-      <div className={styles.bubble} data-own={own || undefined}>
+      <div className={styles.bubble} data-own={own || undefined} data-pending={message.pending || undefined}>
         <div className={styles.meta}>
           <span className={styles.sender}>{own ? "You" : message.from}</span>
           {wasTranslated && (
@@ -64,6 +64,7 @@ function ChatBubble({ message, own }: { message: ChatMessage; own: boolean }) {
               {message.source_lang.toUpperCase()} → {message.target_lang.toUpperCase()}
             </span>
           )}
+          {message.pending && <span className={styles.deliveryState}>sending…</span>}
         </div>
         <p className={styles.text} dir="auto">
           {text}
@@ -72,6 +73,9 @@ function ChatBubble({ message, own }: { message: ChatMessage; own: boolean }) {
           <p className={styles.original} dir="auto">
             {message.original_text}
           </p>
+        )}
+        {message.failed && (
+          <p className={styles.failedNote}>Not delivered — check that the transcription backend is running.</p>
         )}
       </div>
     </div>

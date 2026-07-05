@@ -46,10 +46,16 @@ export class PeerConnectionManager {
   private pc: RTCPeerConnection | null = null;
   private readonly onIceCandidate: (candidate: RTCIceCandidate) => void;
   private readonly onRemoteStream: (stream: MediaStream) => void;
+  private readonly onConnectionStateChange?: (state: RTCPeerConnectionState) => void;
 
-  constructor(onIceCandidate: (candidate: RTCIceCandidate) => void, onRemoteStream: (stream: MediaStream) => void) {
+  constructor(
+    onIceCandidate: (candidate: RTCIceCandidate) => void,
+    onRemoteStream: (stream: MediaStream) => void,
+    onConnectionStateChange?: (state: RTCPeerConnectionState) => void
+  ) {
     this.onIceCandidate = onIceCandidate;
     this.onRemoteStream = onRemoteStream;
+    this.onConnectionStateChange = onConnectionStateChange;
   }
 
   /** Lazily creates (or recreates, if previously closed) the underlying
@@ -77,6 +83,15 @@ export class PeerConnectionManager {
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         this.onIceCandidate(event.candidate);
+      }
+    };
+
+    // Surfaces abrupt peer loss (tab closed, network drop) -- without this
+    // the remote video freezes on its last frame forever, since no
+    // call-ended signaling ever arrives for a dead peer.
+    pc.onconnectionstatechange = () => {
+      if (this.pc === pc) {
+        this.onConnectionStateChange?.(pc.connectionState);
       }
     };
 

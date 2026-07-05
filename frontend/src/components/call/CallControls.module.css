@@ -1,28 +1,38 @@
 .controls {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-5);
+  transform: translateX(-50%);
   display: flex;
-  justify-content: center;
-  gap: var(--space-4);
-  padding: var(--space-5) 0 var(--space-6);
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgb(23 31 38 / 72%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-soft);
+  z-index: 10;
 }
 
 .button {
-  width: 52px;
-  height: 52px;
+  position: relative;
+  width: 46px;
+  height: 46px;
   border-radius: var(--radius-full);
   display: grid;
   place-items: center;
-  background: var(--surface-2);
+  background: transparent;
   color: var(--paper);
-  border: 1px solid var(--line);
+  border: none;
   transition:
     background-color var(--duration-fast) var(--ease-standard),
-    transform var(--duration-fast) var(--ease-standard),
     color var(--duration-fast) var(--ease-standard);
 }
 
 .button:hover:not(:disabled) {
-  background: var(--surface-1);
-  transform: translateY(-2px);
+  background: var(--surface-2);
 }
 
 .button:disabled {
@@ -33,19 +43,39 @@
 .button[data-off="true"] {
   background: var(--danger-dim);
   color: var(--danger);
-  border-color: transparent;
 }
 
 .button[data-active="true"] {
   background: var(--relay-cyan-dim);
   color: var(--relay-cyan);
-  border-color: transparent;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  background: var(--line);
+}
+
+.badge {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink);
+  background: var(--signal-amber);
+  border-radius: var(--radius-full);
 }
 
 .end {
   background: var(--danger);
   color: var(--paper);
-  border-color: transparent;
 }
 
 .end:hover:not(:disabled) {
@@ -54,12 +84,17 @@
 
 @media (max-width: 768px) {
   .controls {
-    gap: var(--space-3);
-    padding: var(--space-3) 0 var(--space-4);
+    bottom: var(--space-4);
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
   }
 
   .button {
-    width: 48px;
-    height: 48px;
+    width: 42px;
+    height: 42px;
+  }
+
+  .divider {
+    height: 20px;
   }
 }

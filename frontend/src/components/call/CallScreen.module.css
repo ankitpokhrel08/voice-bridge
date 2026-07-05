@@ -10,19 +10,43 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+
+.body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
   position: relative;
 }
 
-.tabStrip {
+/* The video stage owns this whole area; controls float over it. */
+.stageArea {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  padding: var(--space-3);
   display: flex;
-  gap: var(--space-2);
-  padding: var(--space-3) var(--space-6) 0;
 }
 
-.tab {
-  display: inline-flex;
+.panel {
+  width: 360px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface-1);
+  border-left: 1px solid var(--line);
+}
+
+.panelHeader {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.panelTab {
   padding: var(--space-1) var(--space-3);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -39,33 +63,73 @@
     background var(--duration-fast) var(--ease-standard);
 }
 
-.tab:hover {
+.panelTab:hover {
   color: var(--text-muted);
 }
 
-.tab[data-active] {
+.panelTab[data-active] {
   color: var(--relay-cyan);
   background: var(--relay-cyan-dim);
   border-color: var(--relay-cyan-strong);
 }
 
-.unreadBadge {
-  min-width: 1.1rem;
-  padding: 0 4px;
-  text-align: center;
-  font-size: var(--text-xs);
-  color: var(--ink);
-  background: var(--signal-amber);
+.panelClose {
+  margin-left: auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  font-size: var(--text-md);
+  line-height: 1;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
   border-radius: var(--radius-full);
+  cursor: pointer;
+  transition:
+    color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
 }
 
-/* Mobile: stack the contacts panel above the call area instead of side-by-side. */
+.panelClose:hover {
+  color: var(--paper);
+  background: var(--surface-2);
+}
+
+/* Mobile: contacts stack on top; the panel becomes a bottom sheet so the
+   video stays visible behind it. */
 @media (max-width: 768px) {
   .layout {
     flex-direction: column;
   }
 
-  .tabStrip {
-    padding: var(--space-2) var(--space-4) 0;
+  .stageArea {
+    padding: var(--space-2);
+  }
+
+  .panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    height: 62dvh;
+    z-index: 40;
+    border-left: none;
+    border-top: 1px solid var(--line-strong);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: var(--shadow-modal);
+    animation: sheetUp var(--duration-base) var(--ease-standard);
+  }
+}
+
+@keyframes sheetUp {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
   }
 }

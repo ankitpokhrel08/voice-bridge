@@ -44,6 +44,9 @@ class ChatSendMessage(BaseModel):
 
     type: Literal["chat"] = "chat"
     text: str
+    # Client-generated id, echoed back so the sender's UI can reconcile its
+    # optimistic pending bubble with the confirmed delivery.
+    client_id: str | None = None
 
 
 class ChatRelayMessage(BaseModel):
@@ -62,6 +65,8 @@ class ChatRelayMessage(BaseModel):
     source_lang: str
     target_lang: str
     ts: float
+    # Present only on the sender's echo (see ChatSendMessage.client_id).
+    client_id: str | None = None
 
     model_config = {"populate_by_name": True}
 

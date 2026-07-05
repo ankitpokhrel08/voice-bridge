@@ -1,0 +1,65 @@
+.overlay {
+  position: absolute;
+  left: 50%;
+  bottom: 116px; /* clears the floating control pill */
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(640px, 82%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  z-index: 7;
+  pointer-events: none;
+}
+
+.line {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-4);
+  background: rgb(18 24 29 / 78%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgb(43 54 61 / 60%);
+  border-radius: var(--radius-md);
+  animation: captionIn var(--duration-base) var(--ease-standard);
+}
+
+@keyframes captionIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chip {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--relay-cyan);
+  letter-spacing: 0.05em;
+}
+
+.text {
+  font-family: var(--font-mono);
+  font-size: var(--text-md);
+  line-height: 1.45;
+  color: var(--paper);
+  text-align: center;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 768px) {
+  .overlay {
+    bottom: 104px;
+    max-width: 90%;
+  }
+
+  .text {
+    font-size: var(--text-base);
+  }
+}

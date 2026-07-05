@@ -8,18 +8,22 @@ import { PeerConnectionManager } from "../lib/peerConnection";
  * reconstructed when those callbacks change identity across renders. */
 export function usePeerConnection(
   onIceCandidate: (candidate: RTCIceCandidate) => void,
-  onRemoteStream: (stream: MediaStream) => void
+  onRemoteStream: (stream: MediaStream) => void,
+  onConnectionStateChange: (state: RTCPeerConnectionState) => void
 ): PeerConnectionManager {
   const onIceCandidateRef = useRef(onIceCandidate);
   const onRemoteStreamRef = useRef(onRemoteStream);
+  const onConnectionStateChangeRef = useRef(onConnectionStateChange);
   onIceCandidateRef.current = onIceCandidate;
   onRemoteStreamRef.current = onRemoteStream;
+  onConnectionStateChangeRef.current = onConnectionStateChange;
 
   const managerRef = useRef<PeerConnectionManager | null>(null);
   if (!managerRef.current) {
     managerRef.current = new PeerConnectionManager(
       (candidate) => onIceCandidateRef.current(candidate),
-      (stream) => onRemoteStreamRef.current(stream)
+      (stream) => onRemoteStreamRef.current(stream),
+      (state) => onConnectionStateChangeRef.current(state)
     );
   }
 

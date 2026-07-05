@@ -126,12 +126,12 @@ export class TranscriptionSession {
 
   /** Send a typed chat message over the same call WebSocket. The backend
    * translates it into the peer's preferred language and relays it; the
-   * sender gets an echo back (rendered via onChat), so no local append is
-   * needed. Returns false if the socket isn't open. */
-  sendChat(text: string): boolean {
+   * sender gets an echo back carrying clientId (surfaced via onChat) that
+   * confirms delivery. Returns false if the socket isn't open. */
+  sendChat(text: string, clientId: string): boolean {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return false;
     try {
-      this.ws.send(JSON.stringify({ type: "chat", text }));
+      this.ws.send(JSON.stringify({ type: "chat", text, client_id: clientId }));
       return true;
     } catch {
       return false;

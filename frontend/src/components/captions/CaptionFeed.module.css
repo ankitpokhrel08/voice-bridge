@@ -3,14 +3,14 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: var(--space-6);
+  padding: var(--space-4);
 }
 
 .signalStrip {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  margin-bottom: var(--space-6);
+  margin-bottom: var(--space-4);
 }
 
 .track {
@@ -52,17 +52,3 @@
   text-align: center;
 }
 
-@media (max-width: 768px) {
-  .feed {
-    padding: var(--space-4);
-  }
-
-  .signalStrip {
-    margin-bottom: var(--space-4);
-  }
-
-  /* Leave room so the docked video tiles don't sit on top of the last caption. */
-  .scroll {
-    padding-bottom: 132px;
-  }
-}

@@ -23,12 +23,17 @@ them with local `faster-whisper`, translates the result into the *other*
 participant's preferred language, and relays it to them as a caption message.
 
 The same WebSocket also carries **text chat**: a client sends
-`{"type": "chat", "text": "..."}`, and the backend translates it from the
-sender's preferred language into the peer's and relays it as a `chat` message
-(same wire shape as captions, including the `from` alias). The sender gets an
-immediate untranslated echo confirming delivery; per-sender ordering is
-preserved by chaining each message's relay task behind the previous one, so a
-slow translation can't reorder messages or block the audio receive loop.
+`{"type": "chat", "text": "...", "client_id": "..."}`, and the backend
+translates it into the peer's preferred language and relays it as a `chat`
+message (same wire shape as captions, including the `from` alias). The sender
+gets an immediate untranslated echo carrying `client_id` back, confirming
+delivery of the client's optimistic bubble. The source language is
+script-checked before translating (`ws_routes._detect_chat_source_lang`) --
+plain Latin text from a non-Latin-script profile is treated as English, and
+native-script text is trusted over the profile setting -- because translating
+from the wrong source garbles output. Per-sender ordering is preserved by
+chaining each message's relay task behind the previous one, so a slow
+translation can't reorder messages or block the audio receive loop.
 
 This is a standalone service: it never talks to the Node/Socket.io signaling
 server (`../server.js`) -- the browser client connects to both independently.

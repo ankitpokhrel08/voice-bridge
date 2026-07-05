@@ -32,6 +32,9 @@ export interface CaptionMessage {
 export interface ChatSendMessage {
   type: "chat";
   text: string;
+  /** Client-generated id, echoed back so the sender's UI can reconcile its
+   * optimistic pending bubble with the confirmed delivery. */
+  client_id?: string;
 }
 
 /** Server -> client chat relay. The sender gets an echo (target_lang ==
@@ -45,6 +48,16 @@ export interface ChatMessage {
   source_lang: string;
   target_lang: string;
   ts: number;
+  /** Present only on the sender's echo. */
+  client_id?: string | null;
+}
+
+/** UI-side chat entry: a wire ChatMessage plus optimistic-send state. Own
+ * messages render immediately as `pending`, flip to confirmed when the
+ * server echo arrives, and to `failed` if no echo comes back in time. */
+export interface ChatDisplayMessage extends ChatMessage {
+  pending?: boolean;
+  failed?: boolean;
 }
 
 export interface ErrorMessage {

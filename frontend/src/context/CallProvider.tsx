@@ -19,7 +19,7 @@ import { Ringtone } from "../lib/ringtone";
 import { deriveCallId } from "../lib/callId";
 import type { CallState, IncomingCall } from "../types/call";
 import type { AnswerPayload, CallEndedPayload, CallRejectedPayload, OfferPayload, Roster } from "../types/socket";
-import type { CaptionMessage, ChatMessage, TranscriptionStatus } from "../types/transcription";
+import type { CaptionMessage, ChatDisplayMessage, TranscriptionStatus } from "../types/transcription";
 
 const initialCallState: CallState = {
   status: "idle",
@@ -59,7 +59,7 @@ interface CallContextValue {
   remoteStream: MediaStream | null;
   displayStream: MediaStream | null;
   captions: CaptionMessage[];
-  chatMessages: ChatMessage[];
+  chatMessages: ChatDisplayMessage[];
   transcriptionStatus: TranscriptionStatus;
   micEnabled: boolean;
   videoEnabled: boolean;
@@ -95,9 +95,48 @@ export function CallProvider({
 
   const localMedia = useLocalMedia();
   const transcription = useTranscriptionSession();
+
+  // Abrupt peer loss (tab close, network drop) never produces call-ended
+  // signaling, so watch the transport itself. "disconnected" can be a
+  // transient blip -- give it a grace period; "failed" is terminal.
+  const callStatusRef = useRef<CallState["status"]>("idle");
+  callStatusRef.current = callState.status;
+  const dropTimerRef = useRef<number | null>(null);
+  const endCallLocallyRef = useRef<() => void>(() => {});
+  const addToastRef = useRef(addToast);
+  addToastRef.current = addToast;
+
+  const clearDropTimer = useCallback(() => {
+    if (dropTimerRef.current !== null) {
+      window.clearTimeout(dropTimerRef.current);
+      dropTimerRef.current = null;
+    }
+  }, []);
+
+  const dropDeadCall = useCallback(() => {
+    clearDropTimer();
+    if (callStatusRef.current === "idle") return;
+    addToastRef.current("Connection lost -- call ended", "error");
+    endCallLocallyRef.current();
+  }, [clearDropTimer]);
+
+  const handleConnectionStateChange = useCallback(
+    (state: RTCPeerConnectionState) => {
+      if (state === "connected") {
+        clearDropTimer();
+      } else if (state === "failed") {
+        dropDeadCall();
+      } else if (state === "disconnected" && dropTimerRef.current === null) {
+        dropTimerRef.current = window.setTimeout(dropDeadCall, 5000);
+      }
+    },
+    [clearDropTimer, dropDeadCall]
+  );
+
   const pcManager = usePeerConnection(
     (candidate) => socket.emit("icecandidate", candidate),
-    (stream) => setRemoteStream(stream)
+    (stream) => setRemoteStream(stream),
+    handleConnectionStateChange
   );
   const screenShare = useScreenShare(pcManager, localMedia.stream);
   const callDurationLabel = useCallTimer(callState.connectedAt);
@@ -117,6 +156,7 @@ export function CallProvider({
   const endCallLocally = useCallback(() => {
     // Close the connection but leave localStream's tracks alone -- they're
     // shared with the next call (see PeerConnectionManager.close()).
+    clearDropTimer();
     pcManager.close();
     resetScreenShare();
     transcription.stop();
@@ -124,7 +164,8 @@ export function CallProvider({
     dismissCallingToast();
     dispatch({ type: "CALL_ENDED" });
     setRemoteStream(null);
-  }, [pcManager, resetScreenShare, transcription, dismissCallingToast]);
+  }, [clearDropTimer, pcManager, resetScreenShare, transcription, dismissCallingToast]);
+  endCallLocallyRef.current = endCallLocally;
 
   // -- Local actions --------------------------------------------------
 

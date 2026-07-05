@@ -1,29 +1,108 @@
 .stage {
-  position: absolute;
-  right: var(--space-6);
-  /* Clears CallControls' rendered height (~108px) plus a gap, so the docked
-     tiles never sit on top of the control bar (and hide the end-call button). */
-  bottom: 124px;
-  display: flex;
-  gap: var(--space-3);
-  align-items: flex-end;
-  z-index: 5;
-  transition: bottom var(--duration-base) var(--ease-standard);
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: radial-gradient(120% 120% at 50% 20%, var(--surface-2) 0%, var(--ink) 78%);
+  border: 1px solid var(--line);
+  transition:
+    box-shadow var(--duration-base) var(--ease-standard),
+    border-color var(--duration-base) var(--ease-standard);
 }
 
-/* Chat tab open: also clear the composer that sits above the control bar. */
-.stage[data-raised] {
-  bottom: 200px;
+/* Real signal, not decoration: lights up when the peer is actually speaking
+   (useAudioLevel on the remote stream), in the caption/relay cyan. */
+.stage[data-speaking="true"] {
+  border-color: var(--relay-cyan-strong);
+  box-shadow:
+    0 0 0 1px var(--relay-cyan-strong),
+    0 0 36px rgb(94 201 195 / 18%);
+}
+
+.remoteVideo,
+.previewVideo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Self-preview mirrors like every native camera app. */
+.previewVideo {
+  transform: scaleX(-1);
+}
+
+.noCamera {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.initial {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  color: var(--text-faint);
+}
+
+/* Bottom gradient over the idle preview so the hint and controls read. */
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgb(18 24 29 / 8%) 40%, rgb(18 24 29 / 62%) 100%);
+  pointer-events: none;
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: 124px;
+  transform: translateX(-50%);
+  max-width: 88%;
+  padding: var(--space-2) var(--space-4);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  letter-spacing: 0.03em;
+  text-align: center;
+  color: var(--paper);
+  background: rgb(18 24 29 / 65%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+  z-index: 6;
+}
+
+.peerTag {
+  position: absolute;
+  top: var(--space-4);
+  left: var(--space-4);
+  padding: 3px 12px;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  color: var(--paper);
+  background: rgb(18 24 29 / 60%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: var(--radius-full);
+  z-index: 6;
+}
+
+.pip {
+  position: absolute;
+  right: var(--space-4);
+  bottom: 104px; /* clears the floating control pill */
+  z-index: 8;
 }
 
 @media (max-width: 768px) {
-  .stage {
-    right: var(--space-4);
-    bottom: 88px; /* clears the smaller mobile control bar */
-    gap: var(--space-2);
+  .pip {
+    right: var(--space-3);
+    bottom: 96px;
   }
 
-  .stage[data-raised] {
-    bottom: 160px;
+  .hint {
+    bottom: 108px;
   }
 }

@@ -131,12 +131,14 @@ async def _handle_text_frame(text: str, participant: Participant, room: Room, tr
             logger.debug("Ignoring malformed chat frame from %s", participant.user_id)
             return
         if chat.text.strip():
-            _enqueue_chat_relay(room, participant, translator, chat.text.strip())
+            _enqueue_chat_relay(room, participant, translator, chat.text.strip(), chat.client_id)
     else:
         logger.debug("Ignoring unrecognized text frame type from %s: %r", participant.user_id, payload.get("type"))
 
 
-def _enqueue_chat_relay(room: Room, sender: Participant, translator: Translator, text: str) -> None:
+def _enqueue_chat_relay(
+    room: Room, sender: Participant, translator: Translator, text: str, client_id: str | None
+) -> None:
     """Chain this message's relay behind the sender's previous one.
 
     Translation can take hundreds of ms; running relays as free-floating tasks
@@ -155,15 +157,68 @@ def _enqueue_chat_relay(room: Room, sender: Participant, translator: Translator,
             except Exception:
                 pass
         try:
-            await _relay_chat(room, sender, translator, message_id, text)
+            await _relay_chat(room, sender, translator, message_id, text, client_id)
         except Exception:
             logger.exception("Chat relay failed for message %d from %s", message_id, sender.user_id)
 
     sender.chat_relay_tail = asyncio.create_task(relay())
 
 
-async def _relay_chat(room: Room, sender: Participant, translator: Translator, message_id: int, text: str) -> None:
-    source_lang = sender.preferred_language
+# Unicode script ranges -> the language this app most plausibly means by them.
+# Used to sanity-check the chat source language: translation from the wrong
+# source garbles output far worse than any model limitation does.
+_SCRIPT_RANGES: list[tuple[range, str]] = [
+    (range(0x0900, 0x0980), "hi"),  # Devanagari
+    (range(0x0600, 0x0700), "ar"),  # Arabic
+    (range(0x3040, 0x3100), "ja"),  # Hiragana + Katakana
+    (range(0x4E00, 0xA000), "zh"),  # CJK Unified Ideographs (Han)
+    (range(0xAC00, 0xD7B0), "ko"),  # Hangul
+    (range(0x0400, 0x0500), "ru"),  # Cyrillic
+]
+
+_NON_LATIN_SCRIPT_LANGS = {"hi", "ar", "ja", "zh", "ko", "ru"}
+
+
+def _detect_chat_source_lang(text: str, preferred: str) -> str:
+    """Correct the chat source language when the text's script contradicts it.
+
+    A user whose preferred language is Hindi may still type plain English;
+    translating that as if it were Hindi produces garbage. Conversely a user
+    set to English may paste native-script text. The script is unambiguous
+    evidence, so trust it over the profile setting.
+    """
+    seen: set[str] = set()
+    for char in text:
+        code = ord(char)
+        for block, lang in _SCRIPT_RANGES:
+            if code in block:
+                seen.add(lang)
+                break
+
+    if seen:
+        # Kana anywhere means Japanese even though kanji are in the Han block;
+        # Han alone is ambiguous between zh and ja, so defer to a ja profile.
+        if "ja" in seen:
+            detected = "ja"
+        elif seen == {"zh"} and preferred == "ja":
+            detected = "ja"
+        else:
+            # Deterministic priority: the more specific scripts before Han.
+            detected = next(lang for lang in ("hi", "ar", "ko", "ru", "zh") if lang in seen)
+        if detected == preferred or (detected == "hi" and preferred in ("mr", "ne")):
+            return preferred
+        return detected
+
+    # Pure Latin text from a non-Latin-script profile is almost surely English.
+    if preferred in _NON_LATIN_SCRIPT_LANGS and any(c.isalpha() for c in text):
+        return "en"
+    return preferred
+
+
+async def _relay_chat(
+    room: Room, sender: Participant, translator: Translator, message_id: int, text: str, client_id: str | None
+) -> None:
+    source_lang = _detect_chat_source_lang(text, sender.preferred_language)
     ts = time.time()
 
     # Echo to the sender first so their own message appears immediately,
@@ -176,6 +231,7 @@ async def _relay_chat(room: Room, sender: Participant, translator: Translator, m
         source_lang=source_lang,
         target_lang=source_lang,
         ts=ts,
+        client_id=client_id,
     )
     await _send_json(sender, echo.to_wire())
 

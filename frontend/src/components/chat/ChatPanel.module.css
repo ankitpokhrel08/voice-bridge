@@ -3,8 +3,8 @@
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: var(--space-6);
-  padding-top: var(--space-4);
+  padding: var(--space-4);
+  padding-top: var(--space-3);
 }
 
 .scroll {
@@ -35,7 +35,7 @@
 }
 
 .bubble {
-  max-width: min(75%, 34rem);
+  max-width: 88%;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
@@ -86,6 +86,22 @@
   padding: 0 6px;
   border-radius: var(--radius-full);
   letter-spacing: 0.03em;
+}
+
+.bubble[data-pending] {
+  opacity: 0.6;
+}
+
+.deliveryState {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-faint);
+}
+
+.failedNote {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--danger);
 }
 
 .text {
