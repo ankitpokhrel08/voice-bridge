@@ -11,6 +11,8 @@ interface VideoStageProps {
   ownName: string;
   localLevel: number;
   remoteLevel: number;
+  /** Lift the docked tiles clear of the chat composer when the chat tab is open. */
+  raised?: boolean;
 }
 
 /** Video is intentionally secondary here -- small, docked tiles rather than
@@ -25,9 +27,10 @@ export function VideoStage({
   ownName,
   localLevel,
   remoteLevel,
+  raised = false,
 }: VideoStageProps) {
   return (
-    <div className={styles.stage}>
+    <div className={styles.stage} data-raised={raised || undefined}>
       <RemoteVideoTile stream={remoteStream} label={peerName} level={remoteLevel} />
       <LocalVideoTile
         stream={localStream}

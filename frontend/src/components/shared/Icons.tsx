@@ -89,6 +89,26 @@ export function ScreenShareIcon(props: IconProps) {
   );
 }
 
+export function ChatIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H12l-4.5 4v-4h-1A2.5 2.5 0 0 1 4 13.5v-7Z" />
+      <path d="M8.5 9h7" />
+      <path d="M8.5 12.5h4.5" />
+    </svg>
+  );
+}
+
+export function CaptionsIcon(props: IconProps) {
+  return (
+    <svg {...base} {...props}>
+      <rect x="3" y="5" width="18" height="14" rx="2.5" />
+      <path d="M10.5 10.2a2.2 2.2 0 1 0 0 3.6" />
+      <path d="M16.5 10.2a2.2 2.2 0 1 0 0 3.6" />
+    </svg>
+  );
+}
+
 export function GithubIcon(props: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" {...props}>

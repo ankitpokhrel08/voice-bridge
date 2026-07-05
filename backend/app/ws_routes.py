@@ -1,14 +1,16 @@
 import asyncio
 import json
 import logging
+import time
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import ValidationError
 
 from .caption_pipeline import run_participant_pipeline
 from .config import settings
-from .rooms import Participant, registry
-from .schemas import ConfigMessage, ReadyMessage
+from .rooms import Participant, Room, registry
+from .schemas import ChatRelayMessage, ChatSendMessage, ConfigMessage, ReadyMessage
+from .translator import Translator
 
 logger = logging.getLogger("transcribe.ws")
 
@@ -78,7 +80,7 @@ async def call_socket(websocket: WebSocket, call_id: str, user_id: str) -> None:
                             dropped_frame_count,
                         )
             elif "text" in message and message["text"] is not None:
-                await _handle_text_frame(message["text"], participant)
+                await _handle_text_frame(message["text"], participant, room, translator)
     except WebSocketDisconnect:
         pass
     finally:
@@ -113,7 +115,7 @@ async def _do_handshake(websocket: WebSocket) -> ConfigMessage | None:
     return config
 
 
-async def _handle_text_frame(text: str, participant: Participant) -> None:
+async def _handle_text_frame(text: str, participant: Participant, room: Room, translator: Translator) -> None:
     try:
         payload = json.loads(text)
     except json.JSONDecodeError:
@@ -122,8 +124,84 @@ async def _handle_text_frame(text: str, participant: Participant) -> None:
 
     if payload.get("type") == "end":
         _signal_shutdown(participant)
+    elif payload.get("type") == "chat":
+        try:
+            chat = ChatSendMessage.model_validate(payload)
+        except ValidationError:
+            logger.debug("Ignoring malformed chat frame from %s", participant.user_id)
+            return
+        if chat.text.strip():
+            _enqueue_chat_relay(room, participant, translator, chat.text.strip())
     else:
         logger.debug("Ignoring unrecognized text frame type from %s: %r", participant.user_id, payload.get("type"))
+
+
+def _enqueue_chat_relay(room: Room, sender: Participant, translator: Translator, text: str) -> None:
+    """Chain this message's relay behind the sender's previous one.
+
+    Translation can take hundreds of ms; running relays as free-floating tasks
+    would let a fast message overtake a slow earlier one. Chaining preserves
+    per-sender ordering while keeping the WS receive loop (which also carries
+    audio frames) unblocked.
+    """
+    message_id = sender.next_chat_id
+    sender.next_chat_id += 1
+    previous = sender.chat_relay_tail
+
+    async def relay() -> None:
+        if previous is not None and not previous.done():
+            try:
+                await previous
+            except Exception:
+                pass
+        try:
+            await _relay_chat(room, sender, translator, message_id, text)
+        except Exception:
+            logger.exception("Chat relay failed for message %d from %s", message_id, sender.user_id)
+
+    sender.chat_relay_tail = asyncio.create_task(relay())
+
+
+async def _relay_chat(room: Room, sender: Participant, translator: Translator, message_id: int, text: str) -> None:
+    source_lang = sender.preferred_language
+    ts = time.time()
+
+    # Echo to the sender first so their own message appears immediately,
+    # before the (potentially slow) translation for the peer runs.
+    echo = ChatRelayMessage(
+        message_id=message_id,
+        from_user=sender.user_id,
+        original_text=text,
+        translated_text=text,
+        source_lang=source_lang,
+        target_lang=source_lang,
+        ts=ts,
+    )
+    await _send_json(sender, echo.to_wire())
+
+    peer = room.peer_of(sender.user_id)
+    if peer is None:
+        return
+
+    target_lang = peer.preferred_language
+    translated = text if target_lang == source_lang else await translator.translate(text, target_lang, source_lang)
+    message = ChatRelayMessage(
+        message_id=message_id,
+        from_user=sender.user_id,
+        original_text=text,
+        translated_text=translated,
+        source_lang=source_lang,
+        target_lang=target_lang,
+        ts=ts,
+    )
+    await _send_json(peer, message.to_wire())
+
+
+async def _send_json(participant: Participant, data: dict) -> None:
+    try:
+        await participant.websocket.send_json(data)
+    except Exception:
+        logger.debug("Failed to send chat message to %s (likely disconnected)", participant.user_id, exc_info=True)
 
 
 def _signal_shutdown(participant: Participant) -> None:

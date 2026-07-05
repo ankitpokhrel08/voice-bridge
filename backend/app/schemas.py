@@ -39,6 +39,36 @@ class CaptionMessage(BaseModel):
         return self.model_dump(by_alias=True)
 
 
+class ChatSendMessage(BaseModel):
+    """Client -> server: a typed chat message from this participant."""
+
+    type: Literal["chat"] = "chat"
+    text: str
+
+
+class ChatRelayMessage(BaseModel):
+    """Server -> client: a chat message, translated for its recipient.
+
+    The sender receives an echo (target_lang == source_lang, translated_text ==
+    original_text) confirming delivery; the peer receives the translated copy.
+    Mirrors CaptionMessage's wire shape, including the `from` alias.
+    """
+
+    type: Literal["chat"] = "chat"
+    message_id: int
+    from_user: str = Field(alias="from")
+    original_text: str
+    translated_text: str
+    source_lang: str
+    target_lang: str
+    ts: float
+
+    model_config = {"populate_by_name": True}
+
+    def to_wire(self) -> dict:
+        return self.model_dump(by_alias=True)
+
+
 class ErrorMessage(BaseModel):
     type: Literal["error"] = "error"
     message: str

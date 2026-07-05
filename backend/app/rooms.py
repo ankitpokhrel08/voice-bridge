@@ -19,6 +19,11 @@ class Participant:
     consumer_task: asyncio.Task | None = None
     next_segment_id: int = 0
     sticky_source_lang: str | None = None
+    next_chat_id: int = 0
+    # Tail of this participant's chat-relay task chain: each chat message's
+    # relay task awaits the previous one, so translations (which can be slow)
+    # never reorder messages and never block the audio receive loop.
+    chat_relay_tail: asyncio.Task | None = None
 
 
 @dataclass

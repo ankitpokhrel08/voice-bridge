@@ -22,6 +22,14 @@ backend runs voice-activity detection to find speech segments, transcribes
 them with local `faster-whisper`, translates the result into the *other*
 participant's preferred language, and relays it to them as a caption message.
 
+The same WebSocket also carries **text chat**: a client sends
+`{"type": "chat", "text": "..."}`, and the backend translates it from the
+sender's preferred language into the peer's and relays it as a `chat` message
+(same wire shape as captions, including the `from` alias). The sender gets an
+immediate untranslated echo confirming delivery; per-sender ordering is
+preserved by chaining each message's relay task behind the previous one, so a
+slow translation can't reorder messages or block the audio receive loop.
+
 This is a standalone service: it never talks to the Node/Socket.io signaling
 server (`../server.js`) -- the browser client connects to both independently.
 The React frontend (`../frontend`) is the real consumer; `scripts/simulate_call.py`

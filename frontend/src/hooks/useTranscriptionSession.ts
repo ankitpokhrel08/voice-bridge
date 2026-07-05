@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TranscriptionSession } from "../lib/transcriptionSession";
-import type { CaptionMessage, TranscriptionStatus } from "../types/transcription";
+import type { CaptionMessage, ChatMessage, TranscriptionStatus } from "../types/transcription";
 
 interface StartOptions {
   callId: string;
@@ -20,15 +20,18 @@ export function useTranscriptionSession() {
   const sessionRef = useRef<TranscriptionSession | null>(null);
   const [status, setStatus] = useState<TranscriptionStatus>("idle");
   const [captions, setCaptions] = useState<CaptionMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
 
   const start = useCallback((opts: StartOptions) => {
     sessionRef.current?.stop();
     setCaptions([]);
+    setChatMessages([]);
     setStatus("connecting");
     const session = new TranscriptionSession({
       ...opts,
       onStatusChange: setStatus,
       onCaption: (caption) => setCaptions((prev) => [...prev, caption]),
+      onChat: (message) => setChatMessages((prev) => [...prev, message]),
     });
     sessionRef.current = session;
     session.start();
@@ -40,11 +43,15 @@ export function useTranscriptionSession() {
     setStatus("idle");
   }, []);
 
+  const sendChat = useCallback((text: string): boolean => {
+    return sessionRef.current?.sendChat(text) ?? false;
+  }, []);
+
   useEffect(() => {
     return () => {
       sessionRef.current?.stop();
     };
   }, []);
 
-  return { start, stop, status, captions };
+  return { start, stop, sendChat, status, captions, chatMessages };
 }

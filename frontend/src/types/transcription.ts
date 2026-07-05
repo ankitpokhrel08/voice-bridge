@@ -29,11 +29,29 @@ export interface CaptionMessage {
   ts: number;
 }
 
+export interface ChatSendMessage {
+  type: "chat";
+  text: string;
+}
+
+/** Server -> client chat relay. The sender gets an echo (target_lang ==
+ * source_lang) confirming delivery; the peer gets the translated copy. */
+export interface ChatMessage {
+  type: "chat";
+  message_id: number;
+  from: string;
+  original_text: string;
+  translated_text: string;
+  source_lang: string;
+  target_lang: string;
+  ts: number;
+}
+
 export interface ErrorMessage {
   type: "error";
   message: string;
 }
 
-export type TranscriptionServerMessage = ReadyMessage | CaptionMessage | ErrorMessage;
-export type TranscriptionClientMessage = ConfigMessage | EndMessage;
+export type TranscriptionServerMessage = ReadyMessage | CaptionMessage | ChatMessage | ErrorMessage;
+export type TranscriptionClientMessage = ConfigMessage | EndMessage | ChatSendMessage;
 export type TranscriptionStatus = "idle" | "connecting" | "active" | "error";

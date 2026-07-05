@@ -1,5 +1,5 @@
 import { TRANSCRIBE_WS_URL } from "../config/env";
-import type { CaptionMessage, TranscriptionStatus } from "../types/transcription";
+import type { CaptionMessage, ChatMessage, TranscriptionStatus } from "../types/transcription";
 
 interface TranscriptionSessionOptions {
   callId: string;
@@ -11,6 +11,7 @@ interface TranscriptionSessionOptions {
   stream: MediaStream;
   onStatusChange: (status: TranscriptionStatus) => void;
   onCaption: (caption: CaptionMessage) => void;
+  onChat: (message: ChatMessage) => void;
 }
 
 /** Owns one call's WebSocket + AudioContext + AudioWorkletNode lifecycle,
@@ -31,7 +32,7 @@ export class TranscriptionSession {
   }
 
   start(): void {
-    const { callId, userId, preferredLanguage, spokenLanguage, onStatusChange, onCaption } = this.options;
+    const { callId, userId, preferredLanguage, spokenLanguage, onStatusChange, onCaption, onChat } = this.options;
     const url = `${TRANSCRIBE_WS_URL}/ws/call/${encodeURIComponent(callId)}/${encodeURIComponent(userId)}`;
     const ws = new WebSocket(url);
     ws.binaryType = "arraybuffer";
@@ -63,6 +64,8 @@ export class TranscriptionSession {
         });
       } else if (msg.type === "caption") {
         onCaption(msg as unknown as CaptionMessage);
+      } else if (msg.type === "chat") {
+        onChat(msg as unknown as ChatMessage);
       } else if (msg.type === "error") {
         console.error("Transcription backend error:", msg.message);
         onStatusChange("error");
@@ -119,6 +122,20 @@ export class TranscriptionSession {
     sourceNode.connect(workletNode);
     workletNode.connect(silentGain);
     silentGain.connect(audioContext.destination);
+  }
+
+  /** Send a typed chat message over the same call WebSocket. The backend
+   * translates it into the peer's preferred language and relays it; the
+   * sender gets an echo back (rendered via onChat), so no local append is
+   * needed. Returns false if the socket isn't open. */
+  sendChat(text: string): boolean {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return false;
+    try {
+      this.ws.send(JSON.stringify({ type: "chat", text }));
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   stop(): void {

@@ -19,7 +19,7 @@ import { Ringtone } from "../lib/ringtone";
 import { deriveCallId } from "../lib/callId";
 import type { CallState, IncomingCall } from "../types/call";
 import type { AnswerPayload, CallEndedPayload, CallRejectedPayload, OfferPayload, Roster } from "../types/socket";
-import type { CaptionMessage, TranscriptionStatus } from "../types/transcription";
+import type { CaptionMessage, ChatMessage, TranscriptionStatus } from "../types/transcription";
 
 const initialCallState: CallState = {
   status: "idle",
@@ -59,6 +59,7 @@ interface CallContextValue {
   remoteStream: MediaStream | null;
   displayStream: MediaStream | null;
   captions: CaptionMessage[];
+  chatMessages: ChatMessage[];
   transcriptionStatus: TranscriptionStatus;
   micEnabled: boolean;
   videoEnabled: boolean;
@@ -68,6 +69,7 @@ interface CallContextValue {
   acceptIncomingCall: () => void;
   rejectIncomingCall: () => void;
   endCall: () => void;
+  sendChat: (text: string) => boolean;
   toggleMic: () => void;
   toggleVideo: () => void;
   toggleScreenShare: () => void;
@@ -267,6 +269,7 @@ export function CallProvider({
     remoteStream,
     displayStream: screenShare.displayStream,
     captions: transcription.captions,
+    chatMessages: transcription.chatMessages,
     transcriptionStatus: transcription.status,
     micEnabled: localMedia.micEnabled,
     videoEnabled: localMedia.videoEnabled,
@@ -276,6 +279,7 @@ export function CallProvider({
     acceptIncomingCall,
     rejectIncomingCall,
     endCall,
+    sendChat: transcription.sendChat,
     toggleMic: localMedia.toggleMic,
     toggleVideo: localMedia.toggleVideo,
     toggleScreenShare,

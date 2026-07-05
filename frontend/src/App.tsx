@@ -24,7 +24,7 @@ function App() {
             preferredLanguage={session.preferredLanguage}
             spokenLanguage={session.spokenLanguage}
           >
-            <CallScreen ownUsername={session.username} />
+            <CallScreen ownUsername={session.username} preferredLanguage={session.preferredLanguage} />
           </CallProvider>
         </SocketProvider>
       ) : (

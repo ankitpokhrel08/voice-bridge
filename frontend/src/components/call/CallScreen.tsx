@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { useCall } from "../../context/CallProvider";
 import { useAudioLevel } from "../../hooks/useAudioLevel";
 import { RosterList } from "../roster/RosterList";
 import { CaptionFeed } from "../captions/CaptionFeed";
+import { ChatPanel } from "../chat/ChatPanel";
+import { CaptionsIcon, ChatIcon } from "../shared/Icons";
 import { CallStatusBar } from "./CallStatusBar";
 import { CallControls } from "./CallControls";
 import { VideoStage } from "./VideoStage";
@@ -10,12 +13,28 @@ import styles from "./CallScreen.module.css";
 
 interface CallScreenProps {
   ownUsername: string;
+  preferredLanguage: string;
 }
 
-export function CallScreen({ ownUsername }: CallScreenProps) {
+type PanelTab = "captions" | "chat";
+
+export function CallScreen({ ownUsername, preferredLanguage }: CallScreenProps) {
   const call = useCall();
   const localLevel = useAudioLevel(call.localStream);
   const remoteLevel = useAudioLevel(call.remoteStream);
+
+  const [activeTab, setActiveTab] = useState<PanelTab>("captions");
+  const [seenChatCount, setSeenChatCount] = useState(0);
+
+  // Mark chat as read while its tab is open; the clamp handles a new call
+  // resetting chatMessages to [] under a stale count.
+  useEffect(() => {
+    if (activeTab === "chat" || call.chatMessages.length < seenChatCount) {
+      setSeenChatCount(call.chatMessages.length);
+    }
+  }, [activeTab, call.chatMessages.length, seenChatCount]);
+
+  const unreadChatCount = activeTab === "chat" ? 0 : Math.max(0, call.chatMessages.length - seenChatCount);
 
   const isBusy = call.callState.status !== "idle" || !call.localStream;
   const peerName = call.callState.peer;
@@ -39,12 +58,48 @@ export function CallScreen({ ownUsername }: CallScreenProps) {
           transcriptionStatus={call.transcriptionStatus}
         />
 
-        <CaptionFeed
-          captions={call.captions}
-          localLevel={localLevel}
-          remoteLevel={remoteLevel}
-          status={call.transcriptionStatus}
-        />
+        <div className={styles.tabStrip} role="tablist" aria-label="Captions and chat">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "captions"}
+            className={styles.tab}
+            data-active={activeTab === "captions" || undefined}
+            onClick={() => setActiveTab("captions")}
+          >
+            <CaptionsIcon width={15} height={15} />
+            Captions
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === "chat"}
+            className={styles.tab}
+            data-active={activeTab === "chat" || undefined}
+            onClick={() => setActiveTab("chat")}
+          >
+            <ChatIcon width={15} height={15} />
+            Chat
+            {unreadChatCount > 0 && <span className={styles.unreadBadge}>{unreadChatCount}</span>}
+          </button>
+        </div>
+
+        {activeTab === "captions" ? (
+          <CaptionFeed
+            captions={call.captions}
+            localLevel={localLevel}
+            remoteLevel={remoteLevel}
+            status={call.transcriptionStatus}
+          />
+        ) : (
+          <ChatPanel
+            messages={call.chatMessages}
+            ownUserId={ownUsername}
+            languageCode={preferredLanguage}
+            canSend={call.transcriptionStatus === "active"}
+            onSend={call.sendChat}
+          />
+        )}
 
         <VideoStage
           localStream={call.localStream}
@@ -55,6 +110,7 @@ export function CallScreen({ ownUsername }: CallScreenProps) {
           ownName={ownUsername}
           localLevel={localLevel}
           remoteLevel={remoteLevel}
+          raised={activeTab === "chat"}
         />
 
         <CallControls
