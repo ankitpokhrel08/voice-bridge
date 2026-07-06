@@ -4,7 +4,7 @@
 
 ![Login screen](docs/screenshot-login.png)
 
-![In-call captions (test call with fake media devices)](docs/screenshot-call.png)
+![FaceTime-style in-call view with translated captions and text chat (test call with fake media devices)](docs/screenshot-call.png)
 
 ## How it works
 
@@ -12,6 +12,7 @@
 - Each participant streams **their own mic audio** to a FastAPI backend over a WebSocket (16kHz PCM via an `AudioWorklet`).
 - The backend runs voice-activity detection to find speech segments, transcribes them with local [faster-whisper](https://github.com/SYSTRAN/faster-whisper), translates the text into the *peer's* chosen language, and pushes it back as a caption — so each caller reads the other's words in their own language.
 - Translation is **free and offline by default** ([Argos Translate](https://github.com/argosopentech/argos-translate), no API key); Google Cloud Translation is available as an opt-in for higher quality.
+- **Translated text chat** rides the same call WebSocket: what you type is delivered in your peer's language and their messages arrive in yours, with per-language typing helpers (phonetic transliteration for Hindi/Arabic/Japanese, accent rows for es/fr/de/pt).
 - At login you choose the language you **speak** (or auto-detect) and the language you want **captions in**.
 
 ## Architecture
@@ -20,7 +21,7 @@
 |---|---|---|---|
 | `server.js` | Node, Express, Socket.io | 9000 | Call signaling + serves the built frontend |
 | `backend/` | Python, FastAPI, faster-whisper, Argos | 8000 | VAD → transcription → translation → caption relay |
-| `frontend/` | React, TypeScript, Vite | 5173 (dev) | Caption-first call UI |
+| `frontend/` | React, TypeScript, Vite | 5173 (dev) | FaceTime-style call UI with caption overlay + translated chat |
 
 ## Quick start
 
